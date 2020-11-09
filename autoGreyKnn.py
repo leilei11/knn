@@ -55,76 +55,115 @@ def get_lost_index(data_test):
     return list_all
 
 
-complete_file = r"D:\pycharmPro\markov\2019.9.9-9.19(completed).csv"
-data_complete = create_dataframe(complete_file, 'I')
+def find_lookback_k():
+    complete_file = r"file\2019.9.9-9.19(completed).csv"
+    data_complete = create_dataframe(complete_file, 'I')
 
-lost_file = r"D:\pycharmPro\markov\2019.9.9-9.19(lost).csv"
-data_lost = create_dataframe(lost_file, 'I')
+    lost_file = r"file\2019.9.9-9.19(lost).csv"
+    data_lost = create_dataframe(lost_file, 'I')
 
-# 数据分割，得到数据缺失部分
-data_cut = data_lost.iloc[5500:6400]
-values = data_cut.values.flatten()
-lost_index = get_lost_index(data_cut)
-print(lost_index)
+    # 数据分割，得到数据缺失部分
+    data_cut = data_lost.iloc[5500:6400]
+    values = data_cut.values.flatten()
+    lost_index = get_lost_index(data_cut)
+    print(lost_index)
 
-# 分割训练数据
-data_train = data_complete.iloc[:5500]
-data_test = data_complete.iloc[5500:6400]
+    # 分割训练数据
+    data_train = data_complete.iloc[:5500]
+    data_test = data_complete.iloc[5500:6400]
 
-data_fill = data_cut.copy()
-data_fill_all = data_cut.copy()
-for i in range(len(lost_index)):
-    print("===================No.%d missing data====================" % (i + 1))
-    grc_cof_max = 0
-    k_best = 0
-    look_back_best = 0
-    for look_back in range(5, 15):
-        train_x, train_y = create_dataset(data_train.values, look_back)
-        for n_neighbors in range(3, 10):
-            print("------look_back = %d, k= %d-------" % (look_back, n_neighbors))
-            sum = 0
-            # 利用自己的knn
-            knn2 = defKnn.KNNClassifier(n_neighbors)
-            knn2.fit(train_x, train_y)
+    data_fill = data_cut.copy()
+    data_fill_all = data_cut.copy()
+    for i in range(len(lost_index)):
+        print("===================No.%d missing data====================" % (i + 1))
+        grc_cof_max = 0
+        k_best = 0
+        look_back_best = 0
+        for look_back in range(5, 15):
+            train_x, train_y = create_dataset(data_train.values, look_back)
+            for n_neighbors in range(3, 10):
+                print("------look_back = %d, k= %d-------" % (look_back, n_neighbors))
+                sum = 0
+                # 利用自己的knn
+                knn2 = defKnn.KNNClassifier(n_neighbors)
+                knn2.fit(train_x, train_y)
 
+                for j in range(lost_index[i][0], lost_index[i][1] + 1):
+                    sum += 1
+                    look_back_x = np.array(data_fill.values[j - look_back:j])
+                    look_back_x = look_back_x.reshape(1, -1)
+                    val2 = knn2.predict(look_back_x)
+                    data_fill.loc[j:j + 1, 'y'] = val2
+
+                temp = knn2.get_grc_cof() / n_neighbors / sum
+
+                if not np.isnan(temp) and temp > grc_cof_max:
+                    grc_cof_max = temp
+                    k_best = n_neighbors
+                    look_back_best = look_back
+                print("Now, No.%d: best look_back = %d, best k = %d\n" % (i + 1, look_back_best, k_best))
+        print("No.%d: k_best = %d, look_back_best =%d\n" % (i + 1, k_best, look_back_best))
+
+        train_x, train_y = create_dataset(data_train.values, look_back_best)
+        # 利用自己的knn以及k_best以及look_back_best
+        knn2 = defKnn.KNNClassifier(k_best)
+        knn2.fit(train_x, train_y)
+        for j in range(lost_index[i][0], lost_index[i][1] + 1):
+            look_back_x = np.array(data_fill_all.values[j - look_back_best:j])
+            look_back_x = look_back_x.reshape(1, -1)
+            val = knn2.predict(look_back_x)
+            data_fill_all.loc[j:j + 1, 'y'] = val
+    print("=================================end===============================")
+
+    plt.figure(0, figsize=(12, 6))
+    plt.plot(data_test.index, data_test['y'], label='real')
+    plt.plot(data_fill_all.index, data_fill_all['y'], label='auto-fill')
+    plt.legend()
+
+    plt.figure(1, figsize=(12, 6))
+    plt.plot(data_cut.index, data_cut['y'], label='missing')
+    plt.legend()
+
+    plt.figure(2, figsize=(12, 6))
+    plt.plot(data_test.index, data_test['y'], label='real')
+    plt.legend()
+    plt.show()
+
+
+def find_value():
+    complete_file = r"file\2019.9.9-9.19(completed).csv"
+    data_complete = create_dataframe(complete_file, 'I')
+
+    lost_file = r"file\2019.9.9-9.19(lost).csv"
+    data_lost = create_dataframe(lost_file, 'I')
+
+    # 数据分割，得到数据缺失部分
+    data_cut = data_lost.iloc[5500:6400]
+    values = data_cut.values.flatten()
+    lost_index = get_lost_index(data_cut)
+    print(lost_index)
+
+    # 分割训练数据
+    data_train = data_complete.iloc[:5500]
+    data_test = data_complete.iloc[5500:6400]
+
+    data_fill = data_cut.copy()
+    data_fill_all = data_cut.copy()
+
+    train_x, train_y = create_dataset(data_train.values, 10)
+
+    value_list = list(np.arange(0.15, 0.6, 0.05))
+    # 利用自己的knn
+    for value in value_list:
+        knn2 = defKnn.KNNClassifier(7, value)
+        knn2.fit(train_x, train_y)
+        for i in range(len(lost_index)):
             for j in range(lost_index[i][0], lost_index[i][1] + 1):
-                sum += 1
-                look_back_x = np.array(data_fill.values[j - look_back:j])
+                look_back_x = np.array(data_fill_all.values[j - 10:j])
                 look_back_x = look_back_x.reshape(1, -1)
-                val2 = knn2.predict(look_back_x)
-                data_fill.loc[j:j + 1, 'y'] = val2
+                val = knn2.predict(look_back_x)
+                data_fill_all.loc[j:j + 1, 'y'] = val
 
-            temp = knn2.get_grc_cof() / n_neighbors / sum
 
-            if not np.isnan(temp) and temp > grc_cof_max:
-                grc_cof_max = temp
-                k_best = n_neighbors
-                look_back_best = look_back
-            print("Now, No.%d: best look_back = %d, best k = %d\n" % (i + 1, look_back_best, k_best))
-    print("No.%d: k_best = %d, look_back_best =%d\n" % (i + 1, k_best, look_back_best))
-
-    train_x, train_y = create_dataset(data_train.values, look_back_best)
-    # 利用自己的knn以及k_best以及look_back_best
-    knn2 = defKnn.KNNClassifier(k_best)
-    knn2.fit(train_x, train_y)
-    for j in range(lost_index[i][0], lost_index[i][1] + 1):
-        look_back_x = np.array(data_fill_all.values[j - look_back_best:j])
-        look_back_x = look_back_x.reshape(1, -1)
-        val = knn2.predict(look_back_x)
-        data_fill_all.loc[j:j + 1, 'y'] = val
-print("=================================end===============================")
-
-plt.figure(0, figsize=(12, 6))
-plt.plot(data_test.index, data_test['y'], label='real')
-plt.plot(data_fill_all.index, data_fill_all['y'], label='auto-fill')
-plt.legend()
-
-plt.figure(1, figsize=(12, 6))
-plt.plot(data_cut.index, data_cut['y'], label='missing')
-plt.legend()
-
-plt.figure(2, figsize=(12, 6))
-plt.plot(data_test.index, data_test['y'], label='real')
-plt.legend()
-plt.show()
-
+if __name__ == '__main__':
+    find_value()

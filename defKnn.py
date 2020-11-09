@@ -4,13 +4,14 @@ from collections import Counter
 
 
 class KNNClassifier:
-    def __init__(self, k):
+    def __init__(self, k, value=None):
         """初始化knn分类器"""
         assert k >= 1, "k must be valid"
         self.k = k  # knn中的k
         self._x_train = None  # 训练数据集在类中，用户不能随意操作，故设置为私有
         self._y_train = None
         self._grc_cof = 0  # 灰色关联系数初始化
+        self._value = value
 
     def fit(self, x_train, y_train):
         """根据训练数据集X_train和y_train训练kNN分类器"""
@@ -28,11 +29,11 @@ class KNNClassifier:
             "must fit before predict!"
         assert x_predict.shape[1] == self._x_train.shape[1], \
             "the feature number of X_predict must be equal to X_train"
-        # 预测X_predict矩阵每一行所属的类别
-        y_predict = [self._predict(x) for x in x_predict]
+
+        y_predict = [self._predict(x, self._value) for x in x_predict]
         return np.array(y_predict)  # 返回的结果也遵循sklearn
 
-    def _predict(self, x):
+    def _predict(self, x, value=None):
         """给定单个待预测的数据x,返回x_predict的预测结果值"""
 
         # 先判断x是合法的
@@ -42,6 +43,13 @@ class KNNClassifier:
         distances = [sqrt(np.sum((x_train - x)**2)) for x_train in self._x_train]
 
         nearest = np.argsort(distances)  # 对距离排序并返回对应的索引
+        if value is not None:
+            for i in nearest[:self.k]:
+                if distances[i] > value:
+                    self.k = i
+                    if i == 0:
+                        self.k = 1
+                    break
         topK_y = [self._y_train[i].tolist() for i in nearest[:self.k]]  # 返回最近的k个距离对应的分类
         topK_x = [self._x_train[i].tolist() for i in nearest[:self.k]]
 
