@@ -268,7 +268,7 @@ def get_value_fill():
     train_x, train_y = create_dataset(data_train.values, look_back)
 
     rmse_all = []
-    value_list = list(np.arange(0.15, 0.61, 0.01))
+    value_list = list(np.arange(0.15, 0.51, 0.01))
 
     for ratio in missing_ratio:
         rmse_list = []
@@ -283,7 +283,7 @@ def get_value_fill():
             lost_index = get_lost_index(data_cut)
 
             # 利用自己的knn
-            knn2 = defKnn.KNNClassifier(7, value)
+            knn2 = defKnn.KNNClassifier(13, value)
             knn2.fit(train_x, train_y)
 
             rmse = 0
@@ -301,35 +301,35 @@ def get_value_fill():
                     rmse += pow(val-data_test.iloc[j]['y'], 2)
 
             mre_list.append(float('%.2f' % (mre / sum)))
-            rmse_list.append(float('%.2f' % math.sqrt(rmse/sum)))
+            rmse_list.append(float('%.2f' % (math.sqrt(rmse/sum))))
 
         if len(rmse_all) == 0:
             rmse_all = rmse_list
         else:
             rmse_all = [i + j for i, j in zip(rmse_all, rmse_list)]
 
-        plt.figure(figsize=(15, 9))
-        plt.rcParams['font.sans-serif'] = ['SimHei']  # 显示中文标签
-        plt.rcParams['axes.spines.top'] = False  # 去掉顶部轴，必须放在plot之前
-        plt.rcParams['axes.spines.right'] = False  # 去掉右部轴
-        plt.tick_params(labelsize=23)
-        plt.autoscale(enable=True, axis='x', tight=True)  # 去掉坐标边缘的留白
-        plt.autoscale(enable=True, axis='y', tight=True)  # 去掉坐标边缘的留白
-        plt.plot(np.array(value_list), rmse_list, 'black')
-        plt.xlabel("阈值", size=23)
-        plt.ylabel('${E_{RMSE}}$/A', size=23)
-        ax = plt.gca()
-        plt.savefig(r'picture\(自适应)缺失率='+str(ratio)+'_RMSE.png',
-                    format='png',
-                    bbox_inches='tight',
-                    transparent=True)
+        # plt.figure(figsize=(15, 9))
+        # plt.rcParams['font.sans-serif'] = ['SimHei']  # 显示中文标签
+        # plt.rcParams['axes.spines.top'] = False  # 去掉顶部轴，必须放在plot之前
+        # plt.rcParams['axes.spines.right'] = False  # 去掉右部轴
+        # plt.tick_params(labelsize=23)
+        # plt.autoscale(enable=True, axis='x', tight=True)  # 去掉坐标边缘的留白
+        # plt.autoscale(enable=True, axis='y', tight=True)  # 去掉坐标边缘的留白
+        # plt.plot(np.array(value_list), rmse_list, 'black')
+        # plt.xlabel("阈值", size=23)
+        # plt.ylabel('${E_{RMSE}}$/A', size=23)
+        # ax = plt.gca()
+        # plt.savefig(r'picture\(自适应)缺失率='+str(ratio)+'_RMSE.png',
+        #             format='png',
+        #             bbox_inches='tight',
+        #             transparent=True)
         # plt.show()
         # plt.close()
         print('(自适应)缺失率=' + str(ratio) + '_RMSE.png 已完成')
     plt.figure(figsize=(15, 9))
     plt.tick_params(labelsize=23)
-    plt.plot(np.array(value_list).astype(dtype=np.str), rmse_all, 'black')
-    plt.xlabel("K值", size=23)
+    plt.plot(np.array(value_list), rmse_all, 'black')
+    plt.xlabel("阈值", size=23)
     plt.ylabel('${E_{RMSE}}$/A', size=23)
     plt.savefig(r'picture\(自适应)缺失率汇总_RMSE.png',
                 format='png',
@@ -387,11 +387,12 @@ def fill_missing_data():
         mre_list.append(float(mre / sum))
         rmse_list.append(float(math.sqrt(rmse/sum)))
 
+        data_fill_plt = data_fill.copy()
         plt.figure(figsize=(15, 9))
         plt.plot([(str(d)).replace('T', ' ')[5:16] for d in list(data_test.index.values)],
-                 data_test['y'].values, "black", linewidth=4, linestyle='-', label='真实值')
+                 data_test['y'].values, "black",  linestyle='-', label='真实值')
         plt.plot([(str(d)).replace('T', ' ')[5:16] for d in list(data_fill_plt.index.values)],
-                 data_fill_plt['y'].values, "black", linewidth=2, linestyle='--', label='填补值')
+                 data_fill_plt['y'].values, "black", linestyle='--', label='填补值')
         plt.gca().xaxis.set_major_locator(ticker.MultipleLocator(200))  # 设置刻度密度
         plt.tick_params(labelsize=23)
         plt.autoscale(enable=True, axis='x', tight=True)  # 去掉坐标边缘的留白

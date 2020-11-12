@@ -37,21 +37,26 @@ class KNNClassifier:
         """给定单个待预测的数据x,返回x_predict的预测结果值"""
 
         # 先判断x是合法的
-        assert x.shape[0] == self._x_train.shape[1],\
+        assert x.shape[0] == self._x_train.shape[1], \
             "the feature number of x must be equal to X_train"
         # 计算新来的数据与整个训练数据的距离
         distances = [sqrt(np.sum((x_train - x)**2)) for x_train in self._x_train]
 
         nearest = np.argsort(distances)  # 对距离排序并返回对应的索引
+        # for i in nearest[:self.k]:
+        #     print(distances[i])
+        temp_k = self.k
         if value is not None:
-            for i in nearest[:self.k]:
-                if distances[i] > value:
-                    self.k = i
+            for i, index in enumerate(nearest[:self.k]):
+                if distances[index] > value:
+                    temp_k = i
                     if i == 0:
-                        self.k = 1
+                        temp_k = 1
                     break
-        topK_y = [self._y_train[i].tolist() for i in nearest[:self.k]]  # 返回最近的k个距离对应的分类
-        topK_x = [self._x_train[i].tolist() for i in nearest[:self.k]]
+        # print("k={0}".format(self.k))
+        # print("---------------")
+        topK_y = [self._y_train[i].tolist() for i in nearest[:temp_k]]  # 返回最近的k个距离对应的分类
+        topK_x = [self._x_train[i].tolist() for i in nearest[:temp_k]]
 
         cof = self._grc(topK_x, x)
         self._grc_cof += np.sum(cof)
