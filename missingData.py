@@ -244,7 +244,7 @@ def get_lookback_fill():
     plt.figure(figsize=(15, 9))
     plt.tick_params(labelsize=23)
     plt.plot(np.array(look_back_list).astype(dtype=np.str), rmse_all, 'black')
-    plt.xlabel("K值", size=23)
+    plt.xlabel("输入特征维度", size=23)
     plt.ylabel('${E_{RMSE}}$/A', size=23)
     plt.savefig(r'picture\(输入维度)缺失率汇总_RMSE.png',
                 format='png',
@@ -450,5 +450,5 @@ if __name__ == "__main__":
     plt.autoscale(enable=True, axis='y', tight=True)  # 去掉坐标边缘的留白
 
     # get_k_fill()
-    # get_lookback_fill()
-    get_value_fill()
+    get_lookback_fill()
+    # get_value_fill()
